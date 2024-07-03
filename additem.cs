@@ -1,0 +1,132 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Security.Policy;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Xml.Linq;
+
+namespace Practicle_cw
+{
+    public partial class additem : UserControl
+    {
+        DataSet dataset;
+
+        int x;
+        public additem()
+        {
+            InitializeComponent();
+        }
+        public additem(int i)
+        {
+            InitializeComponent();
+            x = i;
+        }
+
+        private void additem_Load(object sender, EventArgs e)
+        {
+            
+            string connectionstring = "Data Source = SAHAN-DULMITH\\SQLEXPRESS;Initial Catalog = Practiclecw;Integrated security = True";
+
+            using (SqlConnection conn = new SqlConnection(connectionstring))
+            {
+                conn.Open();
+
+                SqlDataAdapter adapter = new SqlDataAdapter("SELECT * FROM additem", conn);
+
+                dataset = new DataSet();
+
+                adapter.Fill(dataset);
+               
+                    this.label1.Text = dataset.Tables[0].Rows[x][0].ToString();
+                    this.label3.Text = dataset.Tables[0].Rows[x][1].ToString();
+                    this.label2.Text = dataset.Tables[0].Rows[x][2].ToString();
+
+                    DataRow row = dataset.Tables[0].Rows[x];
+                    if (row["photo"] != DBNull.Value)
+                    {
+                        byte[] imgByte = (byte[])row["photo"];
+                        using (MemoryStream ms = new MemoryStream(imgByte))
+                        {
+                            this.pictureBox1.Image = Image.FromStream(ms);
+                        }
+                    }
+
+
+            }
+        }
+
+       
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            double price, total = 0;
+            double qty;
+            // Create connection with SQL
+            string connectionString = "Data Source = SAHAN-DULMITH\\SQLEXPRESS;Initial Catalog = Practiclecw;Integrated security = True";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                // Define command with parameterized query
+                string sql = "INSERT INTO item (Item_Name, qty, unit, price) VALUES (@ItemName, @Qty, @Unit, @Price)";
+                string sql2 = "INSERT INTO income (Item_Name, qty, unit, price,date) VALUES (@ItemName, @Qty, @Unit, @Price,@date)";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                SqlCommand cmd1 = new SqlCommand(sql2, conn);
+
+                // Set parameter values
+                cmd.Parameters.AddWithValue("@ItemName", this.label1.Text);
+                cmd.Parameters.AddWithValue("@Qty", this.textBox1.Text);
+                cmd.Parameters.AddWithValue("@Unit", this.comboBox1.Text);
+
+                //calculate
+                price = Convert.ToDouble(this.label2.Text);
+                qty = Convert.ToDouble(this.textBox1.Text);
+
+                if (comboBox1.SelectedItem == "kg")
+                {
+                    total = price * qty;
+                }
+                else if (comboBox1.SelectedItem == "g")
+                {
+                    total = price * qty / 1000;
+                }
+                else
+                {
+                    total = price * qty;
+                }
+
+
+
+                cmd.Parameters.AddWithValue("@Price", total);
+
+                // Execute command to insert data
+                int rowsAffected = cmd.ExecuteNonQuery();
+
+                cmd1.Parameters.AddWithValue("@ItemName", this.label1.Text);
+                cmd1.Parameters.AddWithValue("@Qty", this.textBox1.Text);
+                cmd1.Parameters.AddWithValue("@Unit", this.comboBox1.Text);
+                cmd1.Parameters.AddWithValue("@Price", total);
+                cmd1.Parameters.AddWithValue("@date", DateTime.Now);
+                // Execute command to insert data
+                int rowsAffected1 = cmd1.ExecuteNonQuery();
+
+                MessageBox.Show(rowsAffected + " item(s) added.");
+            }
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
